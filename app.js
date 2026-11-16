@@ -133,7 +133,6 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 document.querySelectorAll("[data-demo-email]").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const email = btn.dataset.demoEmail;
-    // Auto-fill and submit login for demo convenience
     document.getElementById("login-email").value = email;
     document.getElementById("login-password").value = "Password123";
     document.getElementById("login-form").dispatchEvent(new Event("submit"));
@@ -328,6 +327,11 @@ function openItemModal(reportId) {
     `${item.category} • ${item.location} • ${item.date}`;
   document.getElementById("modal-item-desc").textContent = item.description;
 
+  // Show claim section ONLY for "Found" items that are still "Open"
+  const claimSection = document.getElementById("modal-claim-section");
+  const isFoundOpen = item.type === "Found" && item.status === "Open";
+  claimSection.classList.toggle("hidden", !isFoundOpen);
+
   document.getElementById("item-modal").classList.remove("hidden");
 }
 
@@ -362,7 +366,6 @@ document
     const mobile = document.getElementById("reg-mobile").value.trim();
     const password = document.getElementById("reg-password").value;
 
-    // Basic frontend validation
     if (!full_name || !univ_id || !email || !password) {
       errorEl.textContent = "Please fill in all required fields.";
       return;
@@ -390,11 +393,9 @@ document
 
       showToast("Account created successfully! Please log in.");
 
-      // Switch to the login card automatically
       document.getElementById("register-card").classList.add("hidden");
       document.getElementById("login-card").classList.remove("hidden");
 
-      // Pre-fill email in login form for convenience
       document.getElementById("login-email").value = email;
       document.getElementById("login-password").value = "";
       document.getElementById("register-form").reset();
@@ -402,6 +403,50 @@ document
       errorEl.textContent = "Unable to connect to the backend server.";
     }
   });
+
+// Claim Form Submit (FR-008)
+document.getElementById("claim-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const proofDescription = document
+    .getElementById("claim-details")
+    .value.trim();
+
+  if (!proofDescription) {
+    showToast("Please provide identifying details as proof of ownership.");
+    return;
+  }
+
+  if (!activeModalReportId || !currentUser) {
+    showToast("You must be logged in to submit a claim.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/claims`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reportId: activeModalReportId,
+        claimantId: currentUser.user_id || currentUser.id,
+        proofDescription,
+      }),
+    });
+
+    if (!res.ok) throw new Error("Failed to submit claim");
+
+    const newClaim = await res.json();
+    showToast(`Claim submitted successfully! ID: ${newClaim.claim_id}`);
+
+    document.getElementById("claim-form").reset();
+    document.getElementById("item-modal").classList.add("hidden");
+    activeModalReportId = null;
+
+    initializeAppFromDB();
+  } catch (err) {
+    console.error("Claim submit error:", err);
+    showToast("Error submitting claim to server.");
+  }
+});
 
 // Run initial fetch on page load if logged in
 window.addEventListener("DOMContentLoaded", () => {

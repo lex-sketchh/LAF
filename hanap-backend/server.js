@@ -9,7 +9,7 @@ app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 5000;
 
-// PostgreSQL Connection Pool Setup (Supports Supabase or Local URL)
+// PostgreSQL Connection Pool Setup (Supports Supabase or Local URL)[cite: 14]
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
@@ -31,7 +31,7 @@ pool.connect((err, client, release) => {
 
 // --- API Endpoints ---
 
-// 1. Get all reports (Search & Filter - FR-005)[cite: 10]
+// 1. Get all reports (Search & Filter - FR-005)[cite: 10, 14]
 app.get("/api/reports", async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -43,7 +43,7 @@ app.get("/api/reports", async (req, res) => {
   }
 });
 
-// 2. Submit new report (FR-003, FR-004)[cite: 10]
+// 2. Submit new report (FR-003, FR-004)[cite: 10, 14]
 app.post("/api/reports", async (req, res) => {
   const {
     type,
@@ -60,7 +60,6 @@ app.post("/api/reports", async (req, res) => {
   const reportId = `REP-2026-${Math.floor(104 + Math.random() * 895)}`;
 
   try {
-    // FIXED: Changed photo_url to image_url to match database schema
     const query = `
       INSERT INTO item_reports (report_id, type, name, category, description, location, date, custody_location, status, reporter_id, image_url)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Open', $9, $10) RETURNING *;
@@ -84,7 +83,7 @@ app.post("/api/reports", async (req, res) => {
   }
 });
 
-// 3. User Authentication & Login (FR-002, NFR-004)[cite: 10]
+// 3. User Authentication & Login (FR-002, NFR-004)[cite: 10, 14]
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -106,12 +105,12 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// 4. Registration Endpoint for New Accounts
+// 4. Registration Endpoint for New Accounts[cite: 14]
 app.post("/api/register", async (req, res) => {
   try {
     const { full_name, univ_id, email, mobile, role, password } = req.body;
 
-    // Validate CSU Institutional Email
+    // Validate CSU Institutional Email[cite: 14]
     if (!email || !email.endsWith("@carsu.edu.ph")) {
       return res.status(400).json({
         error:
@@ -144,6 +143,48 @@ app.post("/api/register", async (req, res) => {
     res
       .status(500)
       .json({ error: "Database error during registration: " + err.message });
+  }
+});
+
+// 5. Submit Claim for Found Item (FR-008)[cite: 14]
+app.post("/api/claims", async (req, res) => {
+  const { reportId, claimantId, proofDescription } = req.body;
+  const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
+
+  try {
+    const query = `
+      INSERT INTO claims (claim_id, report_id, claimant_id, proof_description, status)
+      VALUES ($1, $2, $3, $4, 'Pending') RETURNING *;
+    `;
+    const values = [claimId, reportId, claimantId, proofDescription];
+    const { rows } = await pool.query(query, values);
+
+    // Update item report status to 'Claim Pending'
+    await pool.query(
+      "UPDATE item_reports SET status = 'Claim Pending' WHERE report_id = $1",
+      [reportId],
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Claim error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Get all claims[cite: 14]
+app.get("/api/claims", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT c.*, r.name as item_name, r.type as item_type, u.full_name as claimant_name, u.email as claimant_email
+      FROM claims c
+      JOIN item_reports r ON c.report_id = r.report_id
+      JOIN users u ON c.claimant_id = u.user_id
+      ORDER BY c.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
