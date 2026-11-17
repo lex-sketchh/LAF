@@ -7,7 +7,6 @@ const API_BASE = "http://localhost:5000/api";
 let currentUser = null;
 let activeModalReportId = null;
 
-// Application State Store (Populated from PostgreSQL)
 let state = {
   reports: [],
   claims: [],
@@ -15,7 +14,6 @@ let state = {
   activityLogs: [],
 };
 
-// Initialize app by fetching data from PostgreSQL backend
 async function initializeAppFromDB() {
   try {
     const res = await fetch(`${API_BASE}/reports`);
@@ -40,9 +38,6 @@ function showToast(message) {
   setTimeout(() => el.remove(), 3800);
 }
 
-/* ==========================================================================
-   Authentication & Session Management (FR-001, FR-002, NFR-004)
-   ========================================================================== */
 function setAuthenticatedUser(user) {
   currentUser = user;
   document.getElementById("landing-view").classList.add("hidden");
@@ -53,7 +48,6 @@ function setAuthenticatedUser(user) {
   document.getElementById("current-user-label").textContent =
     `${user.full_name || user.fullName} (${user.role})`;
 
-  // Role-based navigation visibility (SRS Section 5.1 & NFR-002)
   const isStaff =
     user.role === "Security Personnel" || user.role === "Administrator";
   const isAdmin = user.role === "Administrator";
@@ -80,7 +74,6 @@ function logout() {
   showToast("You have been signed out.");
 }
 
-// Switch between Register and Login cards
 document.getElementById("switch-to-login").addEventListener("click", () => {
   document.getElementById("register-card").classList.add("hidden");
   document.getElementById("login-card").classList.remove("hidden");
@@ -97,7 +90,6 @@ document.getElementById("switch-to-register").addEventListener("click", () => {
   document.getElementById("register-card").classList.remove("hidden");
 });
 
-// Login Submit (FR-002)
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errorEl = document.getElementById("login-error");
@@ -129,7 +121,6 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   }
 });
 
-// Demo One-Click Logins (Mapped to seed database users)
 document.querySelectorAll("[data-demo-email]").forEach((btn) => {
   btn.addEventListener("click", async () => {
     const email = btn.dataset.demoEmail;
@@ -141,9 +132,6 @@ document.querySelectorAll("[data-demo-email]").forEach((btn) => {
 
 document.getElementById("logout-btn").addEventListener("click", logout);
 
-/* ==========================================================================
-   View Routing & Navigation
-   ========================================================================== */
 function switchView(viewName) {
   document
     .querySelectorAll(".app-view")
@@ -159,6 +147,8 @@ function switchView(viewName) {
     initializeAppFromDB();
   } else if (viewName === "my-records") {
     loadUserRecords();
+  } else if (viewName === "verify") {
+    loadVerificationQueue();
   }
 }
 
@@ -173,12 +163,68 @@ document
   .getElementById("cancel-report-btn")
   .addEventListener("click", () => switchView("browse"));
 
-/* ==========================================================================
-   Load User Records & Activity
-   ========================================================================== */
+async function loadVerificationQueue() {
+  try {
+    const res = await fetch(`${API_BASE}/reports`);
+    if (!res.ok) throw new Error("Failed to fetch reports");
+    const reports = await res.json();
+
+    const container = document.getElementById("verification-list");
+    container.innerHTML = "";
+    document.getElementById("pending-badge").textContent = reports.length;
+
+    if (reports.length === 0) {
+      container.innerHTML = `<div class="surface-card"><p class="muted-text">No reports found in the system queue.</p></div>`;
+      return;
+    }
+
+    reports.forEach((item) => {
+      const itemID = item.report_id || item.id;
+      const statusClass = `status-${item.status.replace(/\s+/g, "-")}`;
+      const isAdmin = currentUser && currentUser.role === "Administrator";
+
+      const el = document.createElement("div");
+      el.className = "record-row";
+      el.innerHTML = `
+        <div>
+          <span class="type-tag">${item.type} Item • ${item.category}</span>
+          <strong>${escapeHtml(item.name)}</strong>
+          <p class="item-meta">${escapeHtml(item.location)} • ${item.date}</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span class="status-badge ${statusClass}">${item.status}</span>
+          <button type="button" class="btn-outline-sm" data-open-item="${itemID}">View Details</button>
+          ${isAdmin ? `<button type="button" class="btn-outline-sm" style="color: #9B3B33; border-color: #9B3B33;" data-delete-report="${itemID}">Delete</button>` : ""}
+        </div>
+      `;
+      container.appendChild(el);
+    });
+
+    container.querySelectorAll("[data-open-item]").forEach((btn) => {
+      btn.addEventListener("click", () => openItemModal(btn.dataset.openItem));
+    });
+
+    container.querySelectorAll("[data-delete-report]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const reportIdToDelete = btn.dataset.deleteReport;
+        if (
+          confirm(`Are you sure you want to delete report ${reportIdToDelete}?`)
+        ) {
+          await deleteReport(reportIdToDelete);
+          loadVerificationQueue();
+        }
+      });
+    });
+  } catch (err) {
+    console.error("Error loading verification queue:", err);
+    showToast("Error loading verification queue.");
+  }
+}
+
 async function loadUserRecords() {
   if (!currentUser) return;
   const userId = currentUser.user_id || currentUser.id;
+  const isAdmin = currentUser.role === "Administrator";
 
   try {
     const res = await fetch(`${API_BASE}/reports/user/${userId}`);
@@ -203,9 +249,24 @@ async function loadUserRecords() {
           <strong>${escapeHtml(item.name)}</strong>
           <p class="item-meta">${item.type} • ${item.category} • ${item.date}</p>
         </div>
-        <span class="status-badge ${statusClass}">${item.status}</span>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span class="status-badge ${statusClass}">${item.status}</span>
+          ${isAdmin || item.reporter_id == userId ? `<button type="button" class="btn-outline-sm" style="color: #9B3B33; border-color: #9B3B33;" data-delete-report="${itemID}">Delete</button>` : ""}
+        </div>
       `;
       container.appendChild(el);
+    });
+
+    container.querySelectorAll("[data-delete-report]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const reportIdToDelete = btn.dataset.deleteReport;
+        if (
+          confirm(`Are you sure you want to delete report ${reportIdToDelete}?`)
+        ) {
+          await deleteReport(reportIdToDelete);
+          loadUserRecords();
+        }
+      });
     });
   } catch (err) {
     console.error("Error loading user records:", err);
@@ -213,9 +274,23 @@ async function loadUserRecords() {
   }
 }
 
-/* ==========================================================================
-   Search & Filter Items (FR-005, FR-006)
-   ========================================================================== */
+async function deleteReport(reportId) {
+  try {
+    const res = await fetch(`${API_BASE}/reports/${reportId}`, {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to delete report");
+
+    showToast(`Report ${reportId} deleted successfully.`);
+    initializeAppFromDB();
+  } catch (err) {
+    console.error("Delete failed:", err);
+    showToast("Error deleting report from server.");
+  }
+}
+
 function renderItemsDirectory() {
   const keyword = document
     .getElementById("filter-keyword")
@@ -291,9 +366,6 @@ document.getElementById("reset-filters-btn").addEventListener("click", () => {
   renderItemsDirectory();
 });
 
-/* ==========================================================================
-   Submit Lost / Found Report (FR-003, FR-004)
-   ========================================================================== */
 document.querySelectorAll('input[name="reportType"]').forEach((radio) => {
   radio.addEventListener("change", (e) => {
     const isFound = e.target.value === "Found";
@@ -371,7 +443,6 @@ function openItemModal(reportId) {
     `${item.category} • ${item.location} • ${item.date}`;
   document.getElementById("modal-item-desc").textContent = item.description;
 
-  // Show claim section ONLY for "Found" items that are still "Open"
   const claimSection = document.getElementById("modal-claim-section");
   const isFoundOpen = item.type === "Found" && item.status === "Open";
   claimSection.classList.toggle("hidden", !isFoundOpen);
@@ -392,7 +463,6 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
-// Register Submit (FR-001)
 document
   .getElementById("register-form")
   .addEventListener("submit", async (e) => {
@@ -448,7 +518,6 @@ document
     }
   });
 
-// Claim Form Submit (FR-008)
 document.getElementById("claim-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const proofDescription = document
@@ -492,7 +561,6 @@ document.getElementById("claim-form").addEventListener("submit", async (e) => {
   }
 });
 
-// Run initial fetch on page load if logged in
 window.addEventListener("DOMContentLoaded", () => {
   initializeAppFromDB();
 });

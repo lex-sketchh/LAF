@@ -9,7 +9,7 @@ app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 5000;
 
-// PostgreSQL Connection Pool Setup (Supports Supabase or Local URL)[cite: 4]
+// PostgreSQL Connection Pool Setup
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
@@ -31,7 +31,7 @@ pool.connect((err, client, release) => {
 
 // --- API Endpoints ---
 
-// 1. Get all reports (Search & Filter - FR-005)[cite: 4]
+// Get all reports
 app.get("/api/reports", async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -43,7 +43,7 @@ app.get("/api/reports", async (req, res) => {
   }
 });
 
-// 1.1 Get reports submitted by a specific user (Fix for My Activity)
+// Get reports submitted by a specific user
 app.get("/api/reports/user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -57,7 +57,7 @@ app.get("/api/reports/user/:userId", async (req, res) => {
   }
 });
 
-// 2. Submit new report (FR-003, FR-004)[cite: 4]
+// Submit new report
 app.post("/api/reports", async (req, res) => {
   const {
     type,
@@ -97,7 +97,33 @@ app.post("/api/reports", async (req, res) => {
   }
 });
 
-// 3. User Authentication & Login (FR-002, NFR-004)[cite: 4]
+// DELETE Report Endpoint (Admin feature)
+app.delete("/api/reports/:reportId", async (req, res) => {
+  const { reportId } = req.params;
+  try {
+    await pool.query("DELETE FROM claims WHERE report_id = $1", [reportId]);
+
+    const result = await pool.query(
+      "DELETE FROM item_reports WHERE report_id = $1 RETURNING *",
+      [reportId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Report not found." });
+    }
+
+    res.json({
+      success: true,
+      message: "Report deleted successfully.",
+      deleted: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Delete error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// User Authentication & Login
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -119,12 +145,11 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// 4. Registration Endpoint for New Accounts[cite: 4]
+// Registration Endpoint
 app.post("/api/register", async (req, res) => {
   try {
     const { full_name, univ_id, email, mobile, role, password } = req.body;
 
-    // Validate CSU Institutional Email
     if (!email || !email.endsWith("@carsu.edu.ph")) {
       return res.status(400).json({
         error:
@@ -139,7 +164,6 @@ app.post("/api/register", async (req, res) => {
     `;
 
     const values = [full_name, univ_id, email, mobile, role, password];
-
     const result = await pool.query(query, values);
 
     res.status(201).json({
@@ -160,7 +184,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// 5. Submit Claim for Found Item (FR-008)[cite: 4]
+// Submit Claim
 app.post("/api/claims", async (req, res) => {
   const { reportId, claimantId, proofDescription } = req.body;
   const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
@@ -173,7 +197,6 @@ app.post("/api/claims", async (req, res) => {
     const values = [claimId, reportId, claimantId, proofDescription];
     const { rows } = await pool.query(query, values);
 
-    // Update item report status to 'Claim Pending'
     await pool.query(
       "UPDATE item_reports SET status = 'Claim Pending' WHERE report_id = $1",
       [reportId],
@@ -186,7 +209,7 @@ app.post("/api/claims", async (req, res) => {
   }
 });
 
-// 6. Get all claims[cite: 4]
+// Get all claims
 app.get("/api/claims", async (req, res) => {
   try {
     const { rows } = await pool.query(`
