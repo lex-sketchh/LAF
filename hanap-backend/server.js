@@ -9,7 +9,7 @@ app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 5000;
 
-// PostgreSQL Connection Pool Setup (Supports Supabase or Local URL)[cite: 14]
+// PostgreSQL Connection Pool Setup (Supports Supabase or Local URL)[cite: 4]
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
@@ -31,7 +31,7 @@ pool.connect((err, client, release) => {
 
 // --- API Endpoints ---
 
-// 1. Get all reports (Search & Filter - FR-005)[cite: 10, 14]
+// 1. Get all reports (Search & Filter - FR-005)[cite: 4]
 app.get("/api/reports", async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -43,7 +43,21 @@ app.get("/api/reports", async (req, res) => {
   }
 });
 
-// 2. Submit new report (FR-003, FR-004)[cite: 10, 14]
+// 1.1 Get reports submitted by a specific user (Fix for My Activity)
+app.get("/api/reports/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { rows } = await pool.query(
+      "SELECT * FROM item_reports WHERE reporter_id = $1 ORDER BY created_at DESC",
+      [userId],
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Submit new report (FR-003, FR-004)[cite: 4]
 app.post("/api/reports", async (req, res) => {
   const {
     type,
@@ -83,7 +97,7 @@ app.post("/api/reports", async (req, res) => {
   }
 });
 
-// 3. User Authentication & Login (FR-002, NFR-004)[cite: 10, 14]
+// 3. User Authentication & Login (FR-002, NFR-004)[cite: 4]
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -105,12 +119,12 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// 4. Registration Endpoint for New Accounts[cite: 14]
+// 4. Registration Endpoint for New Accounts[cite: 4]
 app.post("/api/register", async (req, res) => {
   try {
     const { full_name, univ_id, email, mobile, role, password } = req.body;
 
-    // Validate CSU Institutional Email[cite: 14]
+    // Validate CSU Institutional Email
     if (!email || !email.endsWith("@carsu.edu.ph")) {
       return res.status(400).json({
         error:
@@ -146,7 +160,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// 5. Submit Claim for Found Item (FR-008)[cite: 14]
+// 5. Submit Claim for Found Item (FR-008)[cite: 4]
 app.post("/api/claims", async (req, res) => {
   const { reportId, claimantId, proofDescription } = req.body;
   const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
@@ -172,7 +186,7 @@ app.post("/api/claims", async (req, res) => {
   }
 });
 
-// 6. Get all claims[cite: 14]
+// 6. Get all claims[cite: 4]
 app.get("/api/claims", async (req, res) => {
   try {
     const { rows } = await pool.query(`

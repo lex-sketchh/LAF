@@ -155,7 +155,11 @@ function switchView(viewName) {
   const target = document.getElementById(`view-${viewName}`);
   if (target) target.classList.remove("hidden");
 
-  if (viewName === "browse") initializeAppFromDB();
+  if (viewName === "browse") {
+    initializeAppFromDB();
+  } else if (viewName === "my-records") {
+    loadUserRecords();
+  }
 }
 
 document.querySelectorAll(".nav-tab").forEach((tab) => {
@@ -168,6 +172,46 @@ document
 document
   .getElementById("cancel-report-btn")
   .addEventListener("click", () => switchView("browse"));
+
+/* ==========================================================================
+   Load User Records & Activity
+   ========================================================================== */
+async function loadUserRecords() {
+  if (!currentUser) return;
+  const userId = currentUser.user_id || currentUser.id;
+
+  try {
+    const res = await fetch(`${API_BASE}/reports/user/${userId}`);
+    if (!res.ok) throw new Error("Failed to fetch user reports");
+    const userReports = await res.json();
+
+    const container = document.getElementById("my-reports-list");
+    container.innerHTML = "";
+
+    if (userReports.length === 0) {
+      container.innerHTML = `<p class="muted-text">You have not submitted any reports yet.</p>`;
+      return;
+    }
+
+    userReports.forEach((item) => {
+      const itemID = item.report_id || item.id;
+      const statusClass = `status-${item.status.replace(/\s+/g, "-")}`;
+      const el = document.createElement("div");
+      el.className = "record-row";
+      el.innerHTML = `
+        <div>
+          <strong>${escapeHtml(item.name)}</strong>
+          <p class="item-meta">${item.type} • ${item.category} • ${item.date}</p>
+        </div>
+        <span class="status-badge ${statusClass}">${item.status}</span>
+      `;
+      container.appendChild(el);
+    });
+  } catch (err) {
+    console.error("Error loading user records:", err);
+    showToast("Error loading your personal records.");
+  }
+}
 
 /* ==========================================================================
    Search & Filter Items (FR-005, FR-006)
