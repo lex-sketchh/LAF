@@ -163,20 +163,69 @@ document
   .getElementById("cancel-report-btn")
   .addEventListener("click", () => switchView("browse"));
 
+/* ==========================================================================
+   Verification Queue & "Claim Pending" Section
+   ========================================================================== */
 async function loadVerificationQueue() {
   try {
-    const res = await fetch(`${API_BASE}/reports`);
-    if (!res.ok) throw new Error("Failed to fetch reports");
-    const reports = await res.json();
+    const [reportsRes, claimsRes] = await Promise.all([
+      fetch(`${API_BASE}/reports`),
+      fetch(`${API_BASE}/claims`),
+    ]);
+
+    if (!reportsRes.ok || !claimsRes.ok)
+      throw new Error("Failed to fetch queue data");
+    const reports = await reportsRes.json();
+    const claims = await claimsRes.json();
 
     const container = document.getElementById("verification-list");
     container.innerHTML = "";
-    document.getElementById("pending-badge").textContent = reports.length;
+    document.getElementById("pending-badge").textContent = claims.length;
 
-    if (reports.length === 0) {
-      container.innerHTML = `<div class="surface-card"><p class="muted-text">No reports found in the system queue.</p></div>`;
-      return;
+    // --- SECTION 1: CLAIM PENDING (Ownership Claims) ---
+    const claimsHeader = document.createElement("h2");
+    claimsHeader.className = "section-heading";
+    claimsHeader.textContent = "Claim Pending (Submitted Claims)";
+    container.appendChild(claimsHeader);
+
+    if (claims.length === 0) {
+      const p = document.createElement("p");
+      p.className = "muted-text";
+      p.style.marginBottom = "2rem";
+      p.textContent = "No pending item claims at this time.";
+      container.appendChild(p);
+    } else {
+      claims.forEach((claim) => {
+        const el = document.createElement("div");
+        el.className = "record-row";
+        el.style.marginBottom = "0.75rem";
+        el.innerHTML = `
+          <div>
+            <span class="type-tag">Item: ${escapeHtml(claim.item_name)} (${claim.item_report_id})</span>
+            <strong>Claimant: ${escapeHtml(claim.claimant_name)} &bull; ${escapeHtml(claim.claimant_email)}</strong>
+            <p class="item-meta">Proof of Ownership: "${escapeHtml(claim.proof_description)}"</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="status-badge status-Claim-Pending">${claim.status}</span>
+            ${
+              claim.status === "Pending"
+                ? `
+              <button type="button" class="btn-outline-sm" style="color: #2D4224; border-color: #2D4224;" data-approve-claim="${claim.claim_id}">Approve</button>
+              <button type="button" class="btn-outline-sm" style="color: #9B3B33; border-color: #9B3B33;" data-reject-claim="${claim.claim_id}">Reject</button>
+            `
+                : ""
+            }
+          </div>
+        `;
+        container.appendChild(el);
+      });
     }
+
+    // --- SECTION 2: ALL REPORTS MANAGEMENT ---
+    const reportsHeader = document.createElement("h2");
+    reportsHeader.className = "section-heading mt-lg";
+    reportsHeader.textContent = "All Active Reports & Management";
+    container.appendChild(reportsHeader);
 
     reports.forEach((item) => {
       const itemID = item.report_id || item.id;
@@ -200,6 +249,19 @@ async function loadVerificationQueue() {
       container.appendChild(el);
     });
 
+    // Attach click events for claims approval/rejection
+    container.querySelectorAll("[data-approve-claim]").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        updateClaimStatus(btn.dataset.approveClaim, "Approved"),
+      );
+    });
+    container.querySelectorAll("[data-reject-claim]").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        updateClaimStatus(btn.dataset.rejectClaim, "Rejected"),
+      );
+    });
+
+    // Attach click events for reports
     container.querySelectorAll("[data-open-item]").forEach((btn) => {
       btn.addEventListener("click", () => openItemModal(btn.dataset.openItem));
     });
@@ -218,6 +280,22 @@ async function loadVerificationQueue() {
   } catch (err) {
     console.error("Error loading verification queue:", err);
     showToast("Error loading verification queue.");
+  }
+}
+
+async function updateClaimStatus(claimId, status) {
+  try {
+    const res = await fetch(`${API_BASE}/claims/${claimId}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error("Failed to update claim status");
+    showToast(`Claim ${status.toLowerCase()} successfully.`);
+    loadVerificationQueue();
+  } catch (err) {
+    console.error("Claim update error:", err);
+    showToast("Error updating claim status.");
   }
 }
 

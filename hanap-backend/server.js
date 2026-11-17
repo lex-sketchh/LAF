@@ -9,7 +9,7 @@ app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 5000;
 
-// PostgreSQL Connection Pool Setup
+// PostgreSQL Connection Pool Setup[cite: 4]
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
@@ -31,7 +31,7 @@ pool.connect((err, client, release) => {
 
 // --- API Endpoints ---
 
-// Get all reports
+// Get all reports[cite: 4]
 app.get("/api/reports", async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -43,7 +43,7 @@ app.get("/api/reports", async (req, res) => {
   }
 });
 
-// Get reports submitted by a specific user
+// Get reports submitted by a specific user[cite: 4]
 app.get("/api/reports/user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -57,7 +57,7 @@ app.get("/api/reports/user/:userId", async (req, res) => {
   }
 });
 
-// Submit new report
+// Submit new report[cite: 4]
 app.post("/api/reports", async (req, res) => {
   const {
     type,
@@ -97,12 +97,11 @@ app.post("/api/reports", async (req, res) => {
   }
 });
 
-// DELETE Report Endpoint (Admin feature)
+// DELETE Report Endpoint[cite: 4]
 app.delete("/api/reports/:reportId", async (req, res) => {
   const { reportId } = req.params;
   try {
     await pool.query("DELETE FROM claims WHERE report_id = $1", [reportId]);
-
     const result = await pool.query(
       "DELETE FROM item_reports WHERE report_id = $1 RETURNING *",
       [reportId],
@@ -112,18 +111,89 @@ app.delete("/api/reports/:reportId", async (req, res) => {
       return res.status(404).json({ error: "Report not found." });
     }
 
-    res.json({
-      success: true,
-      message: "Report deleted successfully.",
-      deleted: result.rows[0],
-    });
+    res.json({ success: true, message: "Report deleted successfully." });
   } catch (err) {
-    console.error("Delete error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// User Authentication & Login
+// Submit Claim for Found Item (FR-008)[cite: 4]
+app.post("/api/claims", async (req, res) => {
+  const { reportId, claimantId, proofDescription } = req.body;
+  const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
+
+  try {
+    const query = `
+      INSERT INTO claims (claim_id, report_id, claimant_id, proof_description, status)
+      VALUES ($1, $2, $3, $4, 'Pending') RETURNING *;
+    `;
+    const values = [claimId, reportId, claimantId, proofDescription];
+    const { rows } = await pool.query(query, values);
+
+    await pool.query(
+      "UPDATE item_reports SET status = 'Claim Pending' WHERE report_id = $1",
+      [reportId],
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Claim error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all claims[cite: 4]
+app.get("/api/claims", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT c.*, r.name as item_name, r.type as item_type, r.report_id as item_report_id, u.full_name as claimant_name, u.email as claimant_email
+      FROM claims c
+      JOIN item_reports r ON c.report_id = r.report_id
+      JOIN users u ON c.claimant_id = u.user_id
+      ORDER BY c.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update Claim Status (Approve or Reject)
+app.put("/api/claims/:claimId/status", async (req, res) => {
+  const { claimId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const claimRes = await pool.query(
+      "UPDATE claims SET status = $1 WHERE claim_id = $2 RETURNING *",
+      [status, claimId],
+    );
+
+    if (claimRes.rows.length === 0) {
+      return res.status(404).json({ error: "Claim not found." });
+    }
+
+    const claim = claimRes.rows[0];
+
+    if (status === "Approved") {
+      await pool.query(
+        "UPDATE item_reports SET status = 'Returned' WHERE report_id = $1",
+        [claim.report_id],
+      );
+    } else if (status === "Rejected") {
+      await pool.query(
+        "UPDATE item_reports SET status = 'Open' WHERE report_id = $1",
+        [claim.report_id],
+      );
+    }
+
+    res.json({ success: true, claim: claim });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// User Authentication & Login[cite: 4]
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -145,7 +215,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Registration Endpoint
+// Registration Endpoint[cite: 4]
 app.post("/api/register", async (req, res) => {
   try {
     const { full_name, univ_id, email, mobile, role, password } = req.body;
@@ -181,47 +251,6 @@ app.post("/api/register", async (req, res) => {
     res
       .status(500)
       .json({ error: "Database error during registration: " + err.message });
-  }
-});
-
-// Submit Claim
-app.post("/api/claims", async (req, res) => {
-  const { reportId, claimantId, proofDescription } = req.body;
-  const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
-
-  try {
-    const query = `
-      INSERT INTO claims (claim_id, report_id, claimant_id, proof_description, status)
-      VALUES ($1, $2, $3, $4, 'Pending') RETURNING *;
-    `;
-    const values = [claimId, reportId, claimantId, proofDescription];
-    const { rows } = await pool.query(query, values);
-
-    await pool.query(
-      "UPDATE item_reports SET status = 'Claim Pending' WHERE report_id = $1",
-      [reportId],
-    );
-
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error("Claim error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get all claims
-app.get("/api/claims", async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT c.*, r.name as item_name, r.type as item_type, u.full_name as claimant_name, u.email as claimant_email
-      FROM claims c
-      JOIN item_reports r ON c.report_id = r.report_id
-      JOIN users u ON c.claimant_id = u.user_id
-      ORDER BY c.created_at DESC
-    `);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 
