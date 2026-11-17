@@ -1,380 +1,588 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HANAP — CSU Lost &amp; Found Management System</title>
-  <!-- Editorial Serif + Clean Geometric Sans matching the Fernly Slide -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <!-- Global Navigation -->
-  <header class="site-header">
-    <div class="container header-inner">
-      <a href="#" class="brand" id="brand-home" aria-label="HANAP Home">
-        <span class="brand-mark" aria-hidden="true">H</span>
-        <span class="brand-text">HANAP</span>
-        <span class="brand-sub">CSU Lost &amp; Found</span>
-      </a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HANAP — CSU Lost &amp; Found Management System</title>
+    <!-- Editorial Serif + Clean Geometric Sans matching the Fernly Slide -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Global Navigation -->
+    <header class="site-header">
+      <div class="container header-inner">
+        <a href="#" class="brand" id="brand-home" aria-label="HANAP Home">
+          <span class="brand-mark" aria-hidden="true">H</span>
+          <span class="brand-text">HANAP</span>
+          <span class="brand-sub">CSU Lost &amp; Found</span>
+        </a>
 
-      <!-- Guest Navigation -->
-      <nav class="nav-links" id="guest-nav" aria-label="Public Navigation">
-        <a href="#how-it-works" class="nav-link">How it works</a>
-        <a href="#privacy-policy" class="nav-link">Privacy &amp; Safety</a>
-        <button type="button" class="btn-link" id="nav-login-trigger">Log in</button>
-      </nav>
+        <!-- Guest Navigation -->
+        <nav class="nav-links" id="guest-nav" aria-label="Public Navigation">
+          <a href="#how-it-works" class="nav-link">How it works</a>
+          <a href="#privacy-policy" class="nav-link">Privacy &amp; Safety</a>
+          <button type="button" class="btn-link" id="nav-login-trigger">
+            Log in
+          </button>
+        </nav>
 
-      <!-- Authenticated Navigation (Role-aware per SRS 5.1) -->
-      <nav class="nav-links hidden" id="auth-nav" aria-label="Application Navigation">
-        <button type="button" class="nav-tab active" data-view="browse">Search Items</button>
-        <button type="button" class="nav-tab" data-view="report">Report Item</button>
-        <button type="button" class="nav-tab" data-view="my-records">
-          My Records <span class="badge-pill" id="notif-badge">0</span>
-        </button>
-        <button type="button" class="nav-tab hidden" id="nav-verify-tab" data-view="verify">
-          Verification Queue <span class="badge-pill badge-warn" id="pending-badge">0</span>
-        </button>
-        <button type="button" class="nav-tab hidden" id="nav-admin-tab" data-view="admin">
-          Admin Dashboard
-        </button>
-        <div class="user-chip">
-          <span id="current-user-label">User</span>
-          <button type="button" class="btn-outline-sm" id="logout-btn">Log out</button>
-        </div>
-      </nav>
-    </div>
-  </header>
-
-  <!-- Connectivity / System Status Banner (NFR-011) -->
-  <div id="connectivity-banner" class="banner-alert hidden" role="status" aria-live="polite">
-    You are currently offline. Form entries are preserved locally until connection is restored.
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="toast-container" aria-live="polite"></div>
-
-  <!-- =====================================================================
-       LANDING & AUTHENTICATION VIEW (Styled directly from Fernly Slide)
-       ===================================================================== -->
-  <main id="landing-view" class="landing-section">
-    <div class="container landing-grid">
-      <!-- Left Column: Hero Messaging -->
-      <div class="hero-copy">
-        <span class="eyebrow">Caraga State University • Official Recovery Portal</span>
-        <h1 class="hero-title">Find what’s lost,<br />calmly and safely.</h1>
-        <p class="hero-description">
-          A quiet, centralized space to report lost belongings, log found items, and verify ownership with CSU Security—without exposing your personal contact details.
-        </p>
-
-        <div class="hero-highlights" id="how-it-works">
-          <div class="highlight-item">
-            <strong>Privacy Protected</strong>
-            <span>Your email, phone number, and University ID stay hidden from public listings.</span>
+        <!-- Authenticated Navigation (Role-aware per SRS 5.1) -->
+        <nav
+          class="nav-links hidden"
+          id="auth-nav"
+          aria-label="Application Navigation"
+        >
+          <button type="button" class="nav-tab active" data-view="browse">
+            Search Items
+          </button>
+          <button type="button" class="nav-tab" data-view="report">
+            Report Item
+          </button>
+          <button type="button" class="nav-tab" data-view="my-records">
+            My Records <span class="badge-pill" id="notif-badge">0</span>
+          </button>
+          <button
+            type="button"
+            class="nav-tab hidden"
+            id="nav-verify-tab"
+            data-view="verify"
+          >
+            Verification Queue
+            <span class="badge-pill badge-warn" id="pending-badge">0</span>
+          </button>
+          <button
+            type="button"
+            class="nav-tab hidden"
+            id="nav-admin-tab"
+            data-view="admin"
+          >
+            Admin Dashboard
+          </button>
+          <div class="user-chip">
+            <span id="current-user-label">User</span>
+            <button type="button" class="btn-outline-sm" id="logout-btn">
+              Log out
+            </button>
           </div>
-          <div class="highlight-item">
-            <strong>Verified Custody</strong>
-            <span>Claims are reviewed by CSU Security Personnel &amp; OCSS before release.</span>
-          </div>
-        </div>
-
-        <!-- Quick Demo Role Switcher for UAT / Evaluation -->
-        <div class="demo-box" id="privacy-policy">
-          <p class="demo-title">Quick UAT Demo Accounts (One-Click Sign In):</p>
-          <div class="demo-actions">
-            <button type="button" class="btn-chip" data-demo-email="jane.rivera@carsu.edu.ph">Student (Jane Rivera)</button>
-            <button type="button" class="btn-chip" data-demo-email="security@carsu.edu.ph">Security Personnel</button>
-            <button type="button" class="btn-chip" data-demo-email="admin@carsu.edu.ph">Administrator</button>
-          </div>
-        </div>
+        </nav>
       </div>
+    </header>
 
-      <!-- Right Column: Sign Up / Log In Card (Exact Fernly Slide Aesthetic) -->
-      <div class="auth-card-wrapper">
-        <!-- REGISTER FORM (FR-001) -->
-        <section class="auth-card" id="register-card" aria-labelledby="register-heading">
-          <h2 id="register-heading" class="card-heading">Create your account</h2>
-          <p class="card-subtext">Open to CSU students, faculty, and staff.</p>
-
-          <form id="register-form" novalidate>
-            <div class="form-group">
-              <label for="reg-name">Full name</label>
-              <input type="text" id="reg-name" name="fullName" placeholder="Jane Rivera" required />
-            </div>
-
-            <div class="form-row-2">
-              <div class="form-group">
-                <label for="reg-univ-id">University ID</label>
-                <input type="text" id="reg-univ-id" name="univId" placeholder="231-00412" required />
-              </div>
-              <div class="form-group">
-                <label for="reg-role">Role</label>
-                <select id="reg-role" name="role" required>
-                  <option value="Student">Student</option>
-                  <option value="Faculty / Staff">Faculty / Staff</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="reg-email">University email</label>
-              <input type="email" id="reg-email" name="email" placeholder="jane.rivera@carsu.edu.ph" required />
-            </div>
-
-            <div class="form-group">
-              <label for="reg-mobile">Mobile number <span class="optional-tag">(optional)</span></label>
-              <input type="tel" id="reg-mobile" name="mobile" placeholder="0917 123 4567" />
-            </div>
-
-            <div class="form-group">
-              <label for="reg-password">Password <span class="optional-tag">(min. 8 characters)</span></label>
-              <input type="password" id="reg-password" name="password" placeholder="••••••••••" minlength="8" required />
-            </div>
-
-            <p class="form-error" id="register-error" role="alert"></p>
-
-            <button type="submit" class="btn-primary btn-block">Sign up</button>
-          </form>
-
-          <p class="auth-switch">
-            Already have an account? <button type="button" class="text-link" id="switch-to-login">Log in</button>
-          </p>
-        </section>
-
-        <!-- LOGIN FORM (FR-002 & NFR-004 Lockout) -->
-        <section class="auth-card hidden" id="login-card" aria-labelledby="login-heading">
-          <h2 id="login-heading" class="card-heading">Welcome back</h2>
-          <p class="card-subtext">Sign in to report, search, or track campus items.</p>
-
-          <form id="login-form" novalidate>
-            <div class="form-group">
-              <label for="login-email">University email</label>
-              <input type="email" id="login-email" name="email" placeholder="jane.rivera@carsu.edu.ph" required />
-            </div>
-
-            <div class="form-group">
-              <label for="login-password">Password</label>
-              <input type="password" id="login-password" name="password" placeholder="••••••••••" required />
-            </div>
-
-            <p class="form-error" id="login-error" role="alert"></p>
-
-            <button type="submit" class="btn-primary btn-block">Log in</button>
-          </form>
-
-          <p class="auth-switch">
-            New to HANAP? <button type="button" class="text-link" id="switch-to-register">Create an account</button>
-          </p>
-        </section>
-      </div>
+    <!-- Connectivity / System Status Banner (NFR-011) -->
+    <div
+      id="connectivity-banner"
+      class="banner-alert hidden"
+      role="status"
+      aria-live="polite"
+    >
+      You are currently offline. Form entries are preserved locally until
+      connection is restored.
     </div>
-  </main>
 
-  <!-- =====================================================================
-       AUTHENTICATED WORKSPACE
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- =====================================================================
+       LANDING & AUTHENTICATION VIEW
        ===================================================================== -->
-  <main id="app-workspace" class="workspace-section hidden">
-    <div class="container">
+    <main id="landing-view" class="landing-section">
+      <div class="container landing-grid">
+        <!-- Left Column: Hero Messaging -->
+        <div class="hero-copy">
+          <span class="eyebrow"
+            >Caraga State University • Official Recovery Portal</span
+          >
+          <h1 class="hero-title">Find what’s lost,<br />calmly and safely.</h1>
+          <p class="hero-description">
+            A quiet, centralized space to report lost belongings, log found
+            items, and verify ownership with CSU Security—without exposing your
+            personal contact details.
+          </p>
 
-      <!-- VIEW 1: SEARCH & BROWSE ITEMS (FR-005, FR-006) -->
-      <section id="view-browse" class="app-view">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">Campus Lost &amp; Found Directory</h1>
-            <p class="view-subtitle">Search active records or filter by category, location, and status.</p>
+          <div class="hero-highlights" id="how-it-works">
+            <div class="highlight-item">
+              <strong>Privacy Protected</strong>
+              <span
+                >Your email, phone number, and University ID stay hidden from
+                public listings.</span
+              >
+            </div>
+            <div class="highlight-item">
+              <strong>Verified Custody</strong>
+              <span
+                >Claims are reviewed by CSU Security Personnel &amp; OCSS before
+                release.</span
+              >
+            </div>
           </div>
-          <button type="button" class="btn-primary" id="cta-new-report">+ Submit a Report</button>
+
+          <!-- Quick Demo Role Switcher for UAT / Evaluation -->
+          <div class="demo-box" id="privacy-policy">
+            <p class="demo-title">
+              Quick UAT Demo Accounts (One-Click Sign In):
+            </p>
+            <div class="demo-actions">
+              <button
+                type="button"
+                class="btn-chip"
+                data-demo-email="jane.rivera@carsu.edu.ph"
+              >
+                Student (Jane Rivera)
+              </button>
+              <button
+                type="button"
+                class="btn-chip"
+                data-demo-email="security@carsu.edu.ph"
+              >
+                Security Personnel
+              </button>
+              <button
+                type="button"
+                class="btn-chip"
+                data-demo-email="admin@carsu.edu.ph"
+              >
+                Administrator
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Filter Panel -->
-        <div class="surface-card filter-panel">
-          <div class="filter-grid">
-            <div class="form-group">
-              <label for="filter-keyword">Keyword</label>
-              <input type="search" id="filter-keyword" placeholder="e.g., Hydro Flask, Casio, ID lace..." />
-            </div>
-            <div class="form-group">
-              <label for="filter-type">Report Type</label>
-              <select id="filter-type">
-                <option value="ALL">All Reports</option>
-                <option value="Lost">Lost Items</option>
-                <option value="Found">Found Items</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="filter-category">Category</label>
-              <select id="filter-category">
-                <option value="ALL">All Categories</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Wallets and Bags">Wallets and Bags</option>
-                <option value="IDs and Cards">IDs and Cards</option>
-                <option value="Keys">Keys</option>
-                <option value="Books and Stationery">Books and Stationery</option>
-                <option value="Clothing and Accessories">Clothing and Accessories</option>
-                <option value="Others">Others</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="filter-status">Status</label>
-              <select id="filter-status">
-                <option value="ALL">All Active Statuses</option>
-                <option value="Open">Open</option>
-                <option value="Claim Pending">Claim Pending</option>
-                <option value="Returned">Returned</option>
-              </select>
-            </div>
-          </div>
-          <div class="filter-footer">
-            <span id="results-count" class="muted-text">Showing 0 items</span>
-            <button type="button" class="text-link" id="reset-filters-btn">Clear all filters</button>
-          </div>
-        </div>
+        <!-- Right Column: Sign Up / Log In Card -->
+        <div class="auth-card-wrapper">
+          <!-- REGISTER FORM -->
+          <section
+            class="auth-card"
+            id="register-card"
+            aria-labelledby="register-heading"
+          >
+            <h2 id="register-heading" class="card-heading">
+              Create your account
+            </h2>
+            <p class="card-subtext">
+              Open to CSU students, faculty, and staff.
+            </p>
 
-        <!-- Items Grid -->
-        <div id="items-grid" class="items-grid" aria-live="polite"></div>
-      </section>
-
-      <!-- VIEW 2: SUBMIT LOST / FOUND REPORT (FR-003, FR-004, NFR-011) -->
-      <section id="view-report" class="app-view hidden">
-        <div class="narrow-container">
-          <div class="surface-card">
-            <h1 class="card-heading">Submit an Item Report</h1>
-            <p class="card-subtext">Provide clear, accurate details to help match the item with its owner. Drafts save automatically.</p>
-
-            <form id="report-form" novalidate>
+            <form id="register-form" novalidate>
               <div class="form-group">
-                <label for="rep-type">Report Type *</label>
-                <div class="segmented-control" role="radiogroup" aria-label="Report Type">
-                  <label class="segment-option">
-                    <input type="radio" name="reportType" value="Lost" checked />
-                    <span>I Lost an Item</span>
-                  </label>
-                  <label class="segment-option">
-                    <input type="radio" name="reportType" value="Found" />
-                    <span>I Found an Item</span>
-                  </label>
-                </div>
+                <label for="reg-name">Full name</label>
+                <input
+                  type="text"
+                  id="reg-name"
+                  name="fullName"
+                  placeholder="Jane Rivera"
+                  required
+                />
               </div>
 
               <div class="form-row-2">
                 <div class="form-group">
-                  <label for="rep-name">Item Name * <span class="optional-tag">(max 100 chars)</span></label>
-                  <input type="text" id="rep-name" maxlength="100" placeholder="e.g., Black Lenovo Laptop Charger" required />
+                  <label for="reg-univ-id">University ID</label>
+                  <input
+                    type="text"
+                    id="reg-univ-id"
+                    name="univId"
+                    placeholder="231-00412"
+                    required
+                  />
                 </div>
                 <div class="form-group">
-                  <label for="rep-category">Category *</label>
-                  <select id="rep-category" required>
-                    <option value="">Select a category</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Wallets and Bags">Wallets and Bags</option>
-                    <option value="IDs and Cards">IDs and Cards</option>
-                    <option value="Keys">Keys</option>
-                    <option value="Books and Stationery">Books and Stationery</option>
-                    <option value="Clothing and Accessories">Clothing and Accessories</option>
-                    <option value="Others">Others</option>
+                  <label for="reg-role">Role</label>
+                  <select id="reg-role" name="role" required>
+                    <option value="Student">Student</option>
+                    <option value="Faculty / Staff">Faculty / Staff</option>
                   </select>
                 </div>
               </div>
 
-              <div class="form-row-2">
-                <div class="form-group">
-                  <label for="rep-location" id="rep-location-label">Location Last Seen *</label>
-                  <input type="text" id="rep-location" placeholder="e.g., Hiraya Hall Room 204 / Main Library" required />
-                </div>
-                <div class="form-group">
-                  <label for="rep-date" id="rep-date-label">Date Lost *</label>
-                  <input type="date" id="rep-date" required />
-                </div>
-              </div>
-
-              <!-- Found-only Custody Location field (FR-004 / AD-009) -->
-              <div class="form-group hidden" id="custody-group">
-                <label for="rep-custody">Current Custody Location *</label>
-                <input type="text" id="rep-custody" placeholder="e.g., CSU Main Gate Security Office / OCSS Desk" />
+              <div class="form-group">
+                <label for="reg-email">University email</label>
+                <input
+                  type="email"
+                  id="reg-email"
+                  name="email"
+                  placeholder="jane.rivera@carsu.edu.ph"
+                  required
+                />
               </div>
 
               <div class="form-group">
-                <label for="rep-desc">Description * <span class="optional-tag">(color, brand, distinguishing marks — max 1000 chars)</span></label>
-                <textarea id="rep-desc" rows="4" maxlength="1000" placeholder="Describe visible features. Tip: For found items, keep one unique detail private to verify ownership during claims." required></textarea>
+                <label for="reg-mobile"
+                  >Mobile number
+                  <span class="optional-tag">(optional)</span></label
+                >
+                <input
+                  type="tel"
+                  id="reg-mobile"
+                  name="mobile"
+                  placeholder="0917 123 4567"
+                />
               </div>
 
               <div class="form-group">
-                <label for="rep-photo">Photograph <span class="optional-tag">(optional, JPG/PNG up to 5 MB)</span></label>
-                <input type="file" id="rep-photo" accept="image/png, image/jpeg" />
+                <label for="reg-password"
+                  >Password
+                  <span class="optional-tag">(min. 8 characters)</span></label
+                >
+                <input
+                  type="password"
+                  id="reg-password"
+                  name="password"
+                  placeholder="••••••••••"
+                  minlength="8"
+                  required
+                />
               </div>
 
-              <div class="privacy-notice">
-                <strong>Privacy Guarantee:</strong> Your account contact info (<span id="prefill-contact-preview"></span>) is attached for Security/Admin audit only and will never be shown publicly.
-              </div>
+              <p class="form-error" id="register-error" role="alert"></p>
 
-              <p class="form-error" id="report-error" role="alert"></p>
-
-              <div class="form-actions">
-                <button type="button" class="btn-outline" id="cancel-report-btn">Cancel</button>
-                <button type="submit" class="btn-primary">Submit Report</button>
-              </div>
+              <button type="submit" class="btn-primary btn-block">
+                Sign up
+              </button>
             </form>
-          </div>
-        </div>
-      </section>
 
-      <!-- VIEW 3: MY REPORTS, CLAIMS & NOTIFICATIONS (FR-007, FR-011, FR-015) -->
-      <section id="view-my-records" class="app-view hidden">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">My Activity &amp; Messages</h1>
-            <p class="view-subtitle">Track the progress of your submitted reports, claims, and private messages.</p>
-          </div>
-        </div>
+            <p class="auth-switch">
+              Already have an account?
+              <button type="button" class="text-link" id="switch-to-login">
+                Log in
+              </button>
+            </p>
+          </section>
 
-        <div class="records-layout">
-          <div class="records-main">
-            <h2 class="section-heading">My Submitted Reports</h2>
-            <div id="my-reports-list" class="stack-list"></div>
+          <!-- LOGIN FORM -->
+          <section
+            class="auth-card hidden"
+            id="login-card"
+            aria-labelledby="login-heading"
+          >
+            <h2 id="login-heading" class="card-heading">Welcome back</h2>
+            <p class="card-subtext">
+              Sign in to report, search, or track campus items.
+            </p>
 
-            <h2 class="section-heading mt-lg">My Submitted Claims</h2>
-            <div id="my-claims-list" class="stack-list"></div>
-          </div>
-
-          <aside class="records-sidebar">
-            <div class="surface-card">
-              <div class="sidebar-header">
-                <h2 class="section-heading">Notifications &amp; Inbox</h2>
-                <button type="button" class="text-link" id="mark-all-read-btn">Mark all read</button>
+            <form id="login-form" novalidate>
+              <div class="form-group">
+                <label for="login-email">University email</label>
+                <input
+                  type="email"
+                  id="login-email"
+                  name="email"
+                  placeholder="jane.rivera@carsu.edu.ph"
+                  required
+                />
               </div>
-              <div id="notifications-list" class="notif-list"></div>
+
+              <div class="form-group">
+                <label for="login-password">Password</label>
+                <input
+                  type="password"
+                  id="login-password"
+                  name="password"
+                  placeholder="••••••••••"
+                  required
+                />
+              </div>
+
+              <p class="form-error" id="login-error" role="alert"></p>
+
+              <button type="submit" class="btn-primary btn-block">
+                Log in
+              </button>
+            </form>
+
+            <p class="auth-switch">
+              New to HANAP?
+              <button type="button" class="text-link" id="switch-to-register">
+                Create an account
+              </button>
+            </p>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- =====================================================================
+       AUTHENTICATED WORKSPACE
+       ===================================================================== -->
+    <main id="app-workspace" class="workspace-section hidden">
+      <div class="container">
+        <!-- VIEW 1: SEARCH & BROWSE ITEMS -->
+        <section id="view-browse" class="app-view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">Campus Lost &amp; Found Directory</h1>
+              <p class="view-subtitle">
+                Search active records or filter by category, location, and
+                status.
+              </p>
             </div>
-          </aside>
-        </div>
-      </section>
-
-      <!-- VIEW 4: SECURITY & ADMIN VERIFICATION QUEUE (FR-009, FR-010, BR-002 to BR-007) -->
-      <section id="view-verify" class="app-view hidden">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">Claim Verification Queue</h1>
-            <p class="view-subtitle">Review ownership claims and verify custody before authorizing item release.</p>
+            <button type="button" class="btn-primary" id="cta-new-report">
+              + Submit a Report
+            </button>
           </div>
-        </div>
-        <div id="verification-list" class="stack-list"></div>
-      </section>
 
-      <!-- VIEW 5: ADMINISTRATOR DASHBOARD & GOVERNANCE (FR-012, FR-013, FR-014) -->
-      <section id="view-admin" class="app-view hidden">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">Administrator Overview &amp; Governance</h1>
-            <p class="view-subtitle">System telemetry, user role assignments, and immutable audit logs.</p>
+          <!-- Filter Panel -->
+          <div class="surface-card filter-panel">
+            <div class="filter-grid">
+              <div class="form-group">
+                <label for="filter-keyword">Keyword</label>
+                <input
+                  type="search"
+                  id="filter-keyword"
+                  placeholder="e.g., Hydro Flask, Casio, ID lace..."
+                />
+              </div>
+              <div class="form-group">
+                <label for="filter-type">Report Type</label>
+                <select id="filter-type">
+                  <option value="ALL">All Reports</option>
+                  <option value="Lost">Lost Items</option>
+                  <option value="Found">Found Items</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="filter-category">Category</label>
+                <select id="filter-category">
+                  <option value="ALL">All Categories</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Wallets and Bags">Wallets and Bags</option>
+                  <option value="IDs and Cards">IDs and Cards</option>
+                  <option value="Keys">Keys</option>
+                  <option value="Books and Stationery">
+                    Books and Stationery
+                  </option>
+                  <option value="Clothing and Accessories">
+                    Clothing and Accessories
+                  </option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="filter-status">Status</label>
+                <select id="filter-status">
+                  <option value="ALL">All Active Statuses</option>
+                  <option value="Open">Open</option>
+                  <option value="Claim Pending">Claim Pending</option>
+                  <option value="Returned">Returned</option>
+                </select>
+              </div>
+            </div>
+            <div class="filter-footer">
+              <span id="results-count" class="muted-text">Showing 0 items</span>
+              <button type="button" class="text-link" id="reset-filters-btn">
+                Clear all filters
+              </button>
+            </div>
           </div>
-        </div>
 
-        <!-- Summary Metrics (FR-012) -->
-        <div class="stats-grid" id="admin-stats-grid"></div>
+          <!-- Items Grid -->
+          <div id="items-grid" class="items-grid" aria-live="polite"></div>
+        </section>
 
-        <div class="admin-grid mt-lg">
-          <!-- User & Role Management (FR-013) -->
+        <!-- VIEW 2: SUBMIT LOST / FOUND REPORT -->
+        <section id="view-report" class="app-view hidden">
+          <div class="narrow-container">
+            <div class="surface-card">
+              <h1 class="card-heading">Submit an Item Report</h1>
+              <p class="card-subtext">
+                Provide clear, accurate details to help match the item with its
+                owner. Drafts save automatically.
+              </p>
+
+              <form id="report-form" novalidate>
+                <div class="form-group">
+                  <label for="rep-type">Report Type *</label>
+                  <div
+                    class="segmented-control"
+                    role="radiogroup"
+                    aria-label="Report Type"
+                  >
+                    <label class="segment-option">
+                      <input
+                        type="radio"
+                        name="reportType"
+                        value="Lost"
+                        checked
+                      />
+                      <span>I Lost an Item</span>
+                    </label>
+                    <label class="segment-option">
+                      <input type="radio" name="reportType" value="Found" />
+                      <span>I Found an Item</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="rep-name"
+                      >Item Name *
+                      <span class="optional-tag">(max 100 chars)</span></label
+                    >
+                    <input
+                      type="text"
+                      id="rep-name"
+                      maxlength="100"
+                      placeholder="e.g., Black Lenovo Laptop Charger"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="rep-category">Category *</label>
+                    <select id="rep-category" required>
+                      <option value="">Select a category</option>
+                      <option value="Electronics">Electronics</option>
+                      <option value="Wallets and Bags">Wallets and Bags</option>
+                      <option value="IDs and Cards">IDs and Cards</option>
+                      <option value="Keys">Keys</option>
+                      <option value="Books and Stationery">
+                        Books and Stationery
+                      </option>
+                      <option value="Clothing and Accessories">
+                        Clothing and Accessories
+                      </option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="rep-location" id="rep-location-label"
+                      >Location Last Seen *</label
+                    >
+                    <input
+                      type="text"
+                      id="rep-location"
+                      placeholder="e.g., Hiraya Hall Room 204 / Main Library"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="rep-date" id="rep-date-label"
+                      >Date Lost *</label
+                    >
+                    <input type="date" id="rep-date" required />
+                  </div>
+                </div>
+
+                <!-- Found-only Custody Location field -->
+                <div class="form-group hidden" id="custody-group">
+                  <label for="rep-custody">Current Custody Location *</label>
+                  <input
+                    type="text"
+                    id="rep-custody"
+                    placeholder="e.g., CSU Main Gate Security Office / OCSS Desk"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="rep-desc"
+                    >Description *
+                    <span class="optional-tag"
+                      >(color, brand, distinguishing marks — max 1000
+                      chars)</span
+                    ></label
+                  >
+                  <textarea
+                    id="rep-desc"
+                    rows="4"
+                    maxlength="1000"
+                    placeholder="Describe visible features. Tip: For found items, keep one unique detail private to verify ownership during claims."
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="rep-photo"
+                    >Photograph
+                    <span class="optional-tag"
+                      >(optional, JPG/PNG up to 5 MB)</span
+                    ></label
+                  >
+                  <input
+                    type="file"
+                    id="rep-photo"
+                    accept="image/png, image/jpeg"
+                  />
+                </div>
+
+                <div class="privacy-notice">
+                  <strong>Privacy Guarantee:</strong> Your account contact info
+                  (<span id="prefill-contact-preview"></span>) is attached for
+                  Security/Admin audit only and will never be shown publicly.
+                </div>
+
+                <p class="form-error" id="report-error" role="alert"></p>
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    class="btn-outline"
+                    id="cancel-report-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="btn-primary">
+                    Submit Report
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 3: MY REPORTS, CLAIMS & NOTIFICATIONS -->
+        <section id="view-my-records" class="app-view hidden">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">My Activity &amp; Messages</h1>
+              <p class="view-subtitle">
+                Track the progress of your submitted reports and claims.
+              </p>
+            </div>
+          </div>
+
+          <div class="records-layout">
+            <div class="records-main">
+              <h2 class="section-heading">My Submitted Reports</h2>
+              <div id="my-reports-list" class="stack-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 4: SECURITY & ADMIN VERIFICATION QUEUE -->
+        <section id="view-verify" class="app-view hidden">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">Claim Verification Queue</h1>
+              <p class="view-subtitle">
+                Review ownership claims and manage active system reports.
+              </p>
+            </div>
+          </div>
+          <div id="verification-list" class="stack-list"></div>
+        </section>
+
+        <!-- VIEW 5: ADMINISTRATOR DASHBOARD & GOVERNANCE -->
+        <section id="view-admin" class="app-view hidden">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">
+                Administrator Overview &amp; Governance
+              </h1>
+              <p class="view-subtitle">
+                System telemetry and user account directory.
+              </p>
+            </div>
+          </div>
+
+          <!-- User & Role Management Table -->
           <div class="surface-card">
             <h2 class="section-heading">User Accounts &amp; Roles</h2>
             <div class="table-responsive">
@@ -384,99 +592,78 @@
                     <th>Name &amp; ID</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th>Contact</th>
                   </tr>
                 </thead>
                 <tbody id="admin-users-tbody"></tbody>
               </table>
             </div>
           </div>
+        </section>
+      </div>
+    </main>
 
-          <!-- Audit / Activity Log (FR-014, BR-008) -->
-          <div class="surface-card">
-            <h2 class="section-heading">System Activity Log</h2>
-            <div id="admin-logs-list" class="log-list"></div>
-          </div>
-        </div>
-      </section>
-
-    </div>
-  </main>
-
-  <!-- =====================================================================
-       ITEM DETAILS, CLAIM & CONTACT REPORTER MODAL (FR-006, FR-008, FR-015)
+    <!-- =====================================================================
+       ITEM DETAILS & CLAIM MODAL
        ===================================================================== -->
-  <div id="item-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-item-title">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <span class="status-badge" id="modal-item-badge">Open</span>
-          <span class="ref-code" id="modal-item-ref">REF-0000</span>
-        </div>
-        <button type="button" class="modal-close" id="close-modal-btn" aria-label="Close modal">&times;</button>
-      </div>
-
-      <h2 id="modal-item-title" class="card-heading">Item Title</h2>
-      <p class="muted-text" id="modal-item-meta">Category • Location • Date</p>
-
-      <div id="modal-photo-container" class="modal-photo hidden"></div>
-
-      <div class="modal-body">
-        <p id="modal-item-desc" class="item-full-desc"></p>
-
-        <div id="modal-custody-box" class="info-callout hidden">
-          <strong>Custody Location:</strong> <span id="modal-item-custody"></span>
-        </div>
-
-        <!-- Authorized Role-Only Reporter Details (NFR-005) -->
-        <div id="modal-privileged-contact" class="privileged-box hidden">
-          <strong>Authorized Personnel View (NFR-005):</strong>
-          <p id="modal-reporter-info"></p>
+    <div
+      id="item-modal"
+      class="modal-backdrop hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-item-title"
+    >
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <span class="status-badge" id="modal-item-badge">Open</span>
+            <span class="ref-code" id="modal-item-ref">REF-0000</span>
+          </div>
+          <button
+            type="button"
+            class="modal-close"
+            id="close-modal-btn"
+            aria-label="Close modal"
+          >
+            &times;
+          </button>
         </div>
 
-        <!-- Action Panel: Claim Found Item (FR-008) -->
-        <div id="modal-claim-section" class="modal-subpanel hidden">
-          <h3>Claim This Found Item</h3>
-          <p class="muted-text">Provide specific identifying details (serial number, contents, lock screen, or unique marks) to prove ownership.</p>
-          <form id="claim-form">
-            <div class="form-group">
-              <label for="claim-details">Identifying Details *</label>
-              <textarea id="claim-details" rows="3" maxlength="1000" placeholder="Enter proof of ownership..." required></textarea>
-            </div>
-            <button type="submit" class="btn-primary">Submit Claim for Verification</button>
-          </form>
-        </div>
+        <h2 id="modal-item-title" class="card-heading">Item Title</h2>
+        <p class="muted-text" id="modal-item-meta">
+          Category • Location • Date
+        </p>
 
-        <!-- Action Panel: In-System Contact Reporter (FR-015) -->
-        <div id="modal-message-section" class="modal-subpanel hidden">
-          <h3>Message Reporter Privately</h3>
-          <p class="muted-text">Delivered inside HANAP. Neither party’s email or phone number is disclosed.</p>
-          <form id="message-form">
-            <div class="form-group">
-              <label for="message-text">Message <span class="optional-tag">(max 500 chars)</span></label>
-              <textarea id="message-text" rows="2" maxlength="500" placeholder="Hi, I believe I saw or found this item..." required></textarea>
-            </div>
-            <button type="submit" class="btn-outline">Send In-System Message</button>
-          </form>
-        </div>
+        <div class="modal-body">
+          <p id="modal-item-desc" class="item-full-desc"></p>
 
-        <!-- Authorized Status Override (FR-010) -->
-        <div id="modal-status-section" class="modal-subpanel hidden">
-          <h3>Personnel Status Control</h3>
-          <div class="inline-control">
-            <select id="modal-status-select" aria-label="Update Item Status">
-              <option value="Open">Open</option>
-              <option value="Claim Pending">Claim Pending</option>
-              <option value="Returned">Returned</option>
-              <option value="Closed">Closed (Archive)</option>
-            </select>
-            <button type="button" class="btn-primary" id="update-status-btn">Update Status</button>
+          <!-- Action Panel: Claim Found Item -->
+          <div id="modal-claim-section" class="modal-subpanel hidden">
+            <h3>Claim This Found Item</h3>
+            <p class="muted-text">
+              Provide specific identifying details (serial number, contents,
+              lock screen, or unique marks) to prove ownership.
+            </p>
+            <form id="claim-form">
+              <div class="form-group">
+                <label for="claim-details">Identifying Details *</label>
+                <textarea
+                  id="claim-details"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Enter proof of ownership..."
+                  required
+                ></textarea>
+              </div>
+              <button type="submit" class="btn-primary">
+                Submit Claim for Verification
+              </button>
+            </form>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script src="app.js"></script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>

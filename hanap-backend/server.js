@@ -9,7 +9,7 @@ app.use(express.json({ limit: "5mb" }));
 
 const PORT = process.env.PORT || 5000;
 
-// PostgreSQL Connection Pool Setup[cite: 4]
+// PostgreSQL Connection Pool Setup (Supports Supabase or Local URL)[cite: 1, 14]
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
@@ -31,7 +31,7 @@ pool.connect((err, client, release) => {
 
 // --- API Endpoints ---
 
-// Get all reports[cite: 4]
+// 1. Get all reports (Search & Filter - FR-005)[cite: 10, 14]
 app.get("/api/reports", async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -43,7 +43,7 @@ app.get("/api/reports", async (req, res) => {
   }
 });
 
-// Get reports submitted by a specific user[cite: 4]
+// 1.1 Get reports submitted by a specific user (My Activity fix)[cite: 14]
 app.get("/api/reports/user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -57,7 +57,7 @@ app.get("/api/reports/user/:userId", async (req, res) => {
   }
 });
 
-// Get all registered users (Admin Dashboard feature)
+// 1.2 Get all registered users (Admin Dashboard User Directory)[cite: 14]
 app.get("/api/users", async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -69,7 +69,7 @@ app.get("/api/users", async (req, res) => {
   }
 });
 
-// Submit new report[cite: 4]
+// 2. Submit new report (FR-003, FR-004)[cite: 10, 14]
 app.post("/api/reports", async (req, res) => {
   const {
     type,
@@ -109,7 +109,7 @@ app.post("/api/reports", async (req, res) => {
   }
 });
 
-// DELETE Report Endpoint[cite: 4]
+// 2.1 DELETE Report Endpoint (Admin feature)[cite: 14]
 app.delete("/api/reports/:reportId", async (req, res) => {
   const { reportId } = req.params;
   try {
@@ -129,83 +129,7 @@ app.delete("/api/reports/:reportId", async (req, res) => {
   }
 });
 
-// Submit Claim for Found Item[cite: 4]
-app.post("/api/claims", async (req, res) => {
-  const { reportId, claimantId, proofDescription } = req.body;
-  const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
-
-  try {
-    const query = `
-      INSERT INTO claims (claim_id, report_id, claimant_id, proof_description, status)
-      VALUES ($1, $2, $3, $4, 'Pending') RETURNING *;
-    `;
-    const values = [claimId, reportId, claimantId, proofDescription];
-    const { rows } = await pool.query(query, values);
-
-    await pool.query(
-      "UPDATE item_reports SET status = 'Claim Pending' WHERE report_id = $1",
-      [reportId],
-    );
-
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error("Claim error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get all claims[cite: 4]
-app.get("/api/claims", async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT c.*, r.name as item_name, r.type as item_type, r.report_id as item_report_id, u.full_name as claimant_name, u.email as claimant_email
-      FROM claims c
-      JOIN item_reports r ON c.report_id = r.report_id
-      JOIN users u ON c.claimant_id = u.user_id
-      ORDER BY c.created_at DESC
-    `);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Update Claim Status
-app.put("/api/claims/:claimId/status", async (req, res) => {
-  const { claimId } = req.params;
-  const { status } = req.body;
-
-  try {
-    const claimRes = await pool.query(
-      "UPDATE claims SET status = $1 WHERE claim_id = $2 RETURNING *",
-      [status, claimId],
-    );
-
-    if (claimRes.rows.length === 0) {
-      return res.status(404).json({ error: "Claim not found." });
-    }
-
-    const claim = claimRes.rows[0];
-
-    if (status === "Approved") {
-      await pool.query(
-        "UPDATE item_reports SET status = 'Returned' WHERE report_id = $1",
-        [claim.report_id],
-      );
-    } else if (status === "Rejected") {
-      await pool.query(
-        "UPDATE item_reports SET status = 'Open' WHERE report_id = $1",
-        [claim.report_id],
-      );
-    }
-
-    res.json({ success: true, claim: claim });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// User Authentication & Login[cite: 4]
+// 3. User Authentication & Login (FR-002, NFR-004)[cite: 10, 14]
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -227,7 +151,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Registration Endpoint[cite: 4]
+// 4. Registration Endpoint for New Accounts[cite: 14]
 app.post("/api/register", async (req, res) => {
   try {
     const { full_name, univ_id, email, mobile, role, password } = req.body;
@@ -263,6 +187,82 @@ app.post("/api/register", async (req, res) => {
     res
       .status(500)
       .json({ error: "Database error during registration: " + err.message });
+  }
+});
+
+// 5. Submit Claim for Found Item (FR-008)[cite: 14]
+app.post("/api/claims", async (req, res) => {
+  const { reportId, claimantId, proofDescription } = req.body;
+  const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
+
+  try {
+    const query = `
+      INSERT INTO claims (claim_id, report_id, claimant_id, proof_description, status)
+      VALUES ($1, $2, $3, $4, 'Pending') RETURNING *;
+    `;
+    const values = [claimId, reportId, claimantId, proofDescription];
+    const { rows } = await pool.query(query, values);
+
+    await pool.query(
+      "UPDATE item_reports SET status = 'Claim Pending' WHERE report_id = $1",
+      [reportId],
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Claim error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Get all claims[cite: 14]
+app.get("/api/claims", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT c.*, r.name as item_name, r.type as item_type, r.report_id as item_report_id, u.full_name as claimant_name, u.email as claimant_email
+      FROM claims c
+      JOIN item_reports r ON c.report_id = r.report_id
+      JOIN users u ON c.claimant_id = u.user_id
+      ORDER BY c.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Update Claim Status (Approve or Reject by Staff/Admin)[cite: 14]
+app.put("/api/claims/:claimId/status", async (req, res) => {
+  const { claimId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const claimRes = await pool.query(
+      "UPDATE claims SET status = $1 WHERE claim_id = $2 RETURNING *",
+      [status, claimId],
+    );
+
+    if (claimRes.rows.length === 0) {
+      return res.status(404).json({ error: "Claim not found." });
+    }
+
+    const claim = claimRes.rows[0];
+
+    if (status === "Approved") {
+      await pool.query(
+        "UPDATE item_reports SET status = 'Returned' WHERE report_id = $1",
+        [claim.report_id],
+      );
+    } else if (status === "Rejected") {
+      await pool.query(
+        "UPDATE item_reports SET status = 'Open' WHERE report_id = $1",
+        [claim.report_id],
+      );
+    }
+
+    res.json({ success: true, claim: claim });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -1,6 +1,6 @@
 /**
  * HANAP — CSU Lost & Found Management System
- * Backend-Connected Domain Controller (Express + PostgreSQL API)
+ * Backend-Connected Domain Controller (Express + PostgreSQL API)[cite: 5]
  */
 
 const API_BASE = "http://localhost:5000/api";
@@ -11,7 +11,6 @@ let state = {
   reports: [],
   claims: [],
   notifications: [],
-  activityLogs: [],
 };
 
 async function initializeAppFromDB() {
@@ -165,9 +164,7 @@ document
   .getElementById("cancel-report-btn")
   .addEventListener("click", () => switchView("browse"));
 
-/* ==========================================================================
-   Admin Dashboard — Load All Users Directory
-   ========================================================================== */
+// Load Admin Users Directory
 async function loadAdminUsers() {
   if (!currentUser || currentUser.role !== "Administrator") return;
 
@@ -205,9 +202,7 @@ async function loadAdminUsers() {
   }
 }
 
-/* ==========================================================================
-   Verification Queue & Claims Review
-   ========================================================================== */
+// Verification Queue & Claims Management
 async function loadVerificationQueue() {
   try {
     const [reportsRes, claimsRes] = await Promise.all([
