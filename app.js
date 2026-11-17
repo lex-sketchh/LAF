@@ -149,6 +149,8 @@ function switchView(viewName) {
     loadUserRecords();
   } else if (viewName === "verify") {
     loadVerificationQueue();
+  } else if (viewName === "admin") {
+    loadAdminUsers();
   }
 }
 
@@ -164,7 +166,47 @@ document
   .addEventListener("click", () => switchView("browse"));
 
 /* ==========================================================================
-   Verification Queue & "Claim Pending" Section
+   Admin Dashboard — Load All Users Directory
+   ========================================================================== */
+async function loadAdminUsers() {
+  if (!currentUser || currentUser.role !== "Administrator") return;
+
+  try {
+    const res = await fetch(`${API_BASE}/users`);
+    if (!res.ok) throw new Error("Failed to fetch users");
+    const users = await res.json();
+
+    const tbody = document.getElementById("admin-users-tbody");
+    tbody.innerHTML = "";
+
+    if (users.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="muted-text">No registered users found.</td></tr>`;
+      return;
+    }
+
+    users.forEach((u) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <strong>${escapeHtml(u.full_name)}</strong><br>
+          <span class="ref-code">ID: ${escapeHtml(u.univ_id || "N/A")} • ${escapeHtml(u.email)}</span>
+        </td>
+        <td>${escapeHtml(u.role)}</td>
+        <td><span class="status-badge status-Open">Active</span></td>
+        <td>
+          <span class="ref-code">${u.mobile ? escapeHtml(u.mobile) : "No phone"}</span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Error loading admin users:", err);
+    showToast("Error loading user directory.");
+  }
+}
+
+/* ==========================================================================
+   Verification Queue & Claims Review
    ========================================================================== */
 async function loadVerificationQueue() {
   try {
@@ -182,7 +224,6 @@ async function loadVerificationQueue() {
     container.innerHTML = "";
     document.getElementById("pending-badge").textContent = claims.length;
 
-    // --- SECTION 1: CLAIM PENDING (Ownership Claims) ---
     const claimsHeader = document.createElement("h2");
     claimsHeader.className = "section-heading";
     claimsHeader.textContent = "Claim Pending (Submitted Claims)";
@@ -221,7 +262,6 @@ async function loadVerificationQueue() {
       });
     }
 
-    // --- SECTION 2: ALL REPORTS MANAGEMENT ---
     const reportsHeader = document.createElement("h2");
     reportsHeader.className = "section-heading mt-lg";
     reportsHeader.textContent = "All Active Reports & Management";
@@ -249,7 +289,6 @@ async function loadVerificationQueue() {
       container.appendChild(el);
     });
 
-    // Attach click events for claims approval/rejection
     container.querySelectorAll("[data-approve-claim]").forEach((btn) => {
       btn.addEventListener("click", () =>
         updateClaimStatus(btn.dataset.approveClaim, "Approved"),
@@ -261,7 +300,6 @@ async function loadVerificationQueue() {
       );
     });
 
-    // Attach click events for reports
     container.querySelectorAll("[data-open-item]").forEach((btn) => {
       btn.addEventListener("click", () => openItemModal(btn.dataset.openItem));
     });

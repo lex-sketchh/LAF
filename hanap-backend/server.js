@@ -57,6 +57,18 @@ app.get("/api/reports/user/:userId", async (req, res) => {
   }
 });
 
+// Get all registered users (Admin Dashboard feature)
+app.get("/api/users", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT user_id, full_name, univ_id, email, mobile, role FROM users ORDER BY full_name ASC",
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Submit new report[cite: 4]
 app.post("/api/reports", async (req, res) => {
   const {
@@ -117,7 +129,7 @@ app.delete("/api/reports/:reportId", async (req, res) => {
   }
 });
 
-// Submit Claim for Found Item (FR-008)[cite: 4]
+// Submit Claim for Found Item[cite: 4]
 app.post("/api/claims", async (req, res) => {
   const { reportId, claimantId, proofDescription } = req.body;
   const claimId = `CLM-2026-${Math.floor(104 + Math.random() * 895)}`;
@@ -158,7 +170,7 @@ app.get("/api/claims", async (req, res) => {
   }
 });
 
-// Update Claim Status (Approve or Reject)
+// Update Claim Status
 app.put("/api/claims/:claimId/status", async (req, res) => {
   const { claimId } = req.params;
   const { status } = req.body;
